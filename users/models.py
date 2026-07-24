@@ -45,6 +45,12 @@ class User(AbstractBaseUser,PermissionsMixin):
         help_text=_("User's date of birth")
     )
 
+    occupation = models.CharField(
+    max_length=100,
+    blank=True,
+    null=True,
+)
+
     gender = models.CharField(
         _('gender'),
         max_length=20,
