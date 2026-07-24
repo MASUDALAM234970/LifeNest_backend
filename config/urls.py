@@ -10,8 +10,11 @@ urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
 
-    # Users API
+   # API endpoints
     path("api/users/", include("users.urls")),
+    path('api/mood-tracker/', include('mood_tracker.urls')),
+    path('api/music/', include('music.urls')),
+    path('api/chatbot/',include('chatbot.urls')),
 
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
