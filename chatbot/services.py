@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 import re
@@ -22,40 +23,24 @@ client = genai.Client(api_key=config("GEMINI_API_KEY"))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-
-
 # ==========================================================
 # System Prompt
 # ==========================================================
 
-def system_prompt(language):
-    return f"""
+def system_prompt():
+    return """
 You are CalmMind, a warm and supportive mental health companion.
 
 Rules:
-
-- Reply only in {language}.
-
-- If the message is about emotions, stress, anxiety, depression, overthinking,
-  loneliness, relationships, trauma, self-esteem, motivation, psychology,
-  or mental health, provide a warm and supportive response.
-
-- If the message is NOT related to psychology or mental health,
-  politely explain that you specialize in mental health support
-  and invite the user to ask a related question.
-
-- Never diagnose or claim to be a licensed therapist.
-
-- Respond naturally like a caring friend.
-
-- Use exactly two complete sentences.
-
-- Each sentence should contain around 15–25 words.
-
+- Reply in exactly 2 sentences.
+- Maximum 35 words.
 - Never use bullet points.
-
-- Never switch languages.
+- Never use numbered lists.
+- Never use markdown.
+- Give only one practical suggestion.
+- Keep the response concise and natural.
 """
+
 
 # ==========================================================
 # Greetings
@@ -83,13 +68,7 @@ def is_greeting(text, language):
 # Reject Messages
 # ==========================================================
 
-REJECT = {
-    "English":
-        "I specialize in psychology and mental health support. Feel free to ask me anything related to emotions, stress, anxiety, relationships, or mental well-being.",
 
-    "Bangla":
-        "আমি মূলত মনোবিজ্ঞান ও মানসিক স্বাস্থ্য সম্পর্কিত বিষয়ে সহায়তা করি। আপনি চাইলে আপনার অনুভূতি, মানসিক চাপ, উদ্বেগ বা সম্পর্ক নিয়ে যেকোনো প্রশ্ন করতে পারেন।",
-}
 
 
 # ==========================================================
@@ -107,63 +86,41 @@ HELLO = {
 # Psychology Check
 # ==========================================================
 
-LANGUAGE_MAP = {
-    "English": "english",
-    "Bangla": "bangla",
-}
-
 
 # ==========================================================
 # Generate Reply
 # ==========================================================
 
- 
-def generate_reply(message, history, language):
-    if is_greeting(message, language):
-        return HELLO[language]
 
-    contents = []
+import re
 
-    for item in history:
-        contents.append(
-            types.Content(
-                role="user" if item["role"] == "user" else "model",
-                parts=[types.Part(text=item["content"])]
-            )
-        )
+def generate_reply(message):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    contents.append(
-        types.Content(
-            role="user",
-            parts=[types.Part(text=message)]
-        )
-    )
+    prompt = f"""
+Current Time: {current_time}
 
-    # print(contents)
+User Message:
+{message}
+"""
 
     try:
         response = client.models.generate_content(
             model="models/gemini-3.5-flash-lite",
-            contents=contents,
+            contents=prompt,
             config=types.GenerateContentConfig(
-                system_instruction=system_prompt(language),
-                temperature=0.9,
-                top_p=0.95,
-                max_output_tokens=406,
+                temperature=0.2,
+                top_p=0.9,
+                max_output_tokens=30,
             ),
-           
         )
 
-            # ================= DEBUG =================
-      
-        print(len(response.text))
-       # print(repr(response.text))
-        # =========================================
+        # Clean the response
+        reply = response.text.strip()
+        reply = re.sub(r"\n+", " ", reply)
+        reply = re.sub(r"\s{2,}", " ", reply).strip()
 
-
-       
-        return response.text.strip()
-  
+        return reply
 
     except Exception:
         traceback.print_exc()
